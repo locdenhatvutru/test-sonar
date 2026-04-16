@@ -11,65 +11,13 @@ on:
 
 jobs:
   sonarqube:
-    name: SonarQube Analysis
+    name: SonarQube
     runs-on: ubuntu-latest
-    
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
         with:
-          fetch-depth: 0  # Shallow clones should be disabled for better analysis relevancy
-
-      - name: Setup PHP
-        uses: shivammathur/setup-php@v2
-        with:
-          php-version: '8.2'
-          coverage: xdebug
-          tools: composer
-
-      - name: Install dependencies
-        run: |
-          if [ -f composer.json ]; then
-            composer install --prefer-dist --no-progress --no-suggest
-          fi
-
-      - name: Run tests with coverage (optional)
-        continue-on-error: true
-        run: |
-          if [ -f phpunit.xml ] || [ -f phpunit.xml.dist ]; then
-            vendor/bin/phpunit --coverage-clover=coverage.xml
-          fi
-
-      - name: Verify Secrets
-        run: |
-          if [ -z "${{ secrets.SONAR_TOKEN }}" ]; then
-            echo "❌ Error: SONAR_TOKEN secret is not set!"
-            echo "Please add SONAR_TOKEN to GitHub repository secrets."
-            exit 1
-          fi
-          if [ -z "${{ secrets.SONAR_HOST_URL }}" ]; then
-            echo "❌ Error: SONAR_HOST_URL secret is not set!"
-            echo "Please add SONAR_HOST_URL to GitHub repository secrets."
-            exit 1
-          fi
-          echo "✅ All required secrets are configured"
-          echo "🔗 SonarQube URL: ${{ secrets.SONAR_HOST_URL }}"
-
+          fetch-depth: 0  # Shallow clones should be disabled for a better relevancy of analysis
       - name: SonarQube Scan
-        uses: sonarsource/sonarqube-scan-action@master
+        uses: SonarSource/sonarqube-scan-action@v6
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
-
-      - name: SonarQube Quality Gate check
-        id: sonarqube-quality-gate-check
-        uses: sonarsource/sonarqube-quality-gate-action@master
-        timeout-minutes: 5
-        env:
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
-        # continue-on-error: true
-
-      - name: Display Quality Gate Status
-        run: |
-          echo "SonarQube Quality Gate status: ${{ steps.sonarqube-quality-gate-check.outputs.quality-gate-status }}"
