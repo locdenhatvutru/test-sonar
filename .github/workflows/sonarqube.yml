@@ -40,15 +40,26 @@ jobs:
             vendor/bin/phpunit --coverage-clover=coverage.xml
           fi
 
+      - name: Verify Secrets
+        run: |
+          if [ -z "${{ secrets.SONAR_TOKEN }}" ]; then
+            echo "❌ Error: SONAR_TOKEN secret is not set!"
+            echo "Please add SONAR_TOKEN to GitHub repository secrets."
+            exit 1
+          fi
+          if [ -z "${{ secrets.SONAR_HOST_URL }}" ]; then
+            echo "❌ Error: SONAR_HOST_URL secret is not set!"
+            echo "Please add SONAR_HOST_URL to GitHub repository secrets."
+            exit 1
+          fi
+          echo "✅ All required secrets are configured"
+          echo "🔗 SonarQube URL: ${{ secrets.SONAR_HOST_URL }}"
+
       - name: SonarQube Scan
         uses: sonarsource/sonarqube-scan-action@master
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
-        with:
-          args: >
-            -Dsonar.projectKey=${{ secrets.SONAR_PROJECT_KEY }}
-            -Dsonar.verbose=true
 
       - name: SonarQube Quality Gate check
         id: sonarqube-quality-gate-check
@@ -57,8 +68,7 @@ jobs:
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
-        # Uncomment to fail the workflow if Quality Gate fails
-        # continue-on-error: false
+        # continue-on-error: true
 
       - name: Display Quality Gate Status
         run: |
